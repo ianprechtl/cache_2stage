@@ -11,7 +11,7 @@ module top (
 	// drivers
 	input 								core_request_i,	
 	input 								core_wren_i,
-	input 	[`TOP_BW_CORE_ADDR_BYTE-1:0]core_addr_i,
+	input 	[`TOP_BW_CORE_ADDR-1:0] 	core_addr_i,
 	input 	[`TOP_BW_DATA_WORD-1:0] 	core_data_i,
 
 	// sinks
@@ -24,27 +24,26 @@ module top (
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 wire 									external_write_in_bus;
 wire  	[`TOP_BW_CACHE_COMMAND-1:0] 	external_command_in_bus;
-wire 	[`TOP_BW_USED_ADDR_WORD-1:0] 	external_addr_in_bus;
-wire  	[`TOP_BW_DATA_EXTERNAL_BUS-1:0] external_data_in_bus;
+wire 	[`TOP_BW_CORE_ADDR-1:0] 		external_addr_in_bus;
+wire  	[`TOP_BW_DATA_BLOCK-1:0] 		external_data_in_bus;
 wire 									external_full_in_bus; 
 
 wire 									external_write_out_bus;
 wire  	[`TOP_BW_CACHE_COMMAND-1:0] 	external_command_out_bus;
-wire 	[`TOP_BW_USED_ADDR_WORD-1:0] 	external_addr_out_bus;
-wire  	[`TOP_BW_DATA_EXTERNAL_BUS-1:0] external_data_out_bus;
+wire 	[`TOP_BW_CORE_ADDR-1:0] 		external_addr_out_bus;
+wire  	[`TOP_BW_DATA_BLOCK-1:0] 		external_data_out_bus;
 wire 									external_full_out_bus; 
 
 cache_level_1 #(
-	.BW_CORE_ADDR_BYTE 		(`TOP_BW_CORE_ADDR_BYTE 	), 		// byte addressible input address
-	.BW_USED_ADDR_BYTE 		(`TOP_BW_USED_ADDR_BYTE 	), 		// byte addressible converted address
-	.BW_DATA_WORD 			(`TOP_BW_DATA_WORD 			),  	// bits in a data word
-	.BW_DATA_EXTERNAL_BUS 	(`TOP_BW_DATA_EXTERNAL_BUS 	), 		// bits that can be transfered between this level cache and next
-	.BW_CACHE_COMMAND 		(`TOP_BW_CACHE_COMMAND 		),
-	.CACHE_WORDS_PER_BLOCK 	(`TOP_CACHE_WORDS_PER_BLOCK ), 		// words in a block
-	.CACHE_CAPACITY_BLOCKS 	(`TOP_CACHE_CAPACITY_BLOCKS ), 		// cache capacity in blocks
-	.CACHE_ASSOCIATIVITY 	(`TOP_CACHE_ASSOCIATIVITY 	),				
-	.CACHE_POLICY 			(`TOP_CACHE_POLICY 			),
-	.BW_CONFIG_REGS 		(`TOP_BW_CONFIG_REGS 		)
+	.BW_ACCESS_ADDR 	(`TOP_BW_CORE_ADDR 			), 	
+	.BW_DATA_WORD 		(`TOP_BW_DATA_WORD 			),
+	.N_WORDS_PER_BLOCK 	(`TOP_CACHE_WORDS_PER_BLOCK	),
+	// cache design parameters
+	.N_CAPACITY_BLOCKS 	(`TOP_CACHE_CAPACITY_BLOCKS	),
+	.ASSOCIATIVITY 		(`TOP_CACHE_ASSOCIATIVITY 	),
+	.POLICY 			(`TOP_CACHE_POLICY 			),
+	.BW_CACHE_COMMAND 	(`TOP_BW_CACHE_COMMAND 		), 		// cache commands between levels
+	.BW_CACHE_CONFIG 	(`TOP_BW_CONFIG_REGS 		) 		// special cache register locations
 )cache_level_1_inst (
 
 	// control signals
@@ -55,10 +54,8 @@ cache_level_1 #(
 	.stall_o 				(stall_o 			 	), 		// stall caused by this cache level
 
 	// metric, control, and misc signals
-	.config0_i 				('b0 					), 		// cache commands
-	.config1_i 				('b0 					), 		// cache buffer addresses
-	.status_o				( 						), 		// cache/components status 		
-	.config0_o 				( 						), 		// cache buffer data
+	.config_i('b0),
+	.config_o(),
 
 	// core/hart signals
 	.core_request_i 	 	(core_request_i 		),	
@@ -87,15 +84,18 @@ cache_level_1 #(
 // external memory controller
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 wire 							memory_wren;
-wire [`TOP_BW_RAM_ADDR_WORD-1:0]memory_addr;
+wire [`TOP_BW_RAM-1:0] 			memory_addr;
 wire [`TOP_BW_DATA_WORD-1:0] 	memory_write_data;
 wire [`TOP_BW_DATA_WORD-1:0] 	memory_read_data;
 
+
 test_memory_controller #(
-	.BW_RAM_ADDR_WORD 		(`TOP_BW_RAM_ADDR_WORD 		),
-	.BW_USED_ADDR_BYTE 		(`TOP_BW_USED_ADDR_BYTE 	), 		// byte addressible converted address
+	.BW_RAM_ADDR_WORD 		(`TOP_BW_RAM 				),
+	.BW_USED_ADDR_BYTE 		(26 						), 		// byte addressible converted address
+
+
 	.BW_DATA_WORD 			(`TOP_BW_DATA_WORD 			),  	// bits in a data word
-	.BW_DATA_EXTERNAL_BUS 	(`TOP_BW_DATA_EXTERNAL_BUS 	), 		// bits that can be transfered between this level cache and next
+	.BW_DATA_EXTERNAL_BUS 	(`TOP_BW_DATA_BLOCK 		), 		// bits that can be transfered between this level cache and next
 	.BW_CACHE_COMMAND 		(`TOP_BW_CACHE_COMMAND 		),
 	.CACHE_WORDS_PER_BLOCK 	(`TOP_CACHE_WORDS_PER_BLOCK ), 		// words in a block
 	.CACHE_CAPACITY_BLOCKS 	(`TOP_CACHE_CAPACITY_BLOCKS ), 		// cache capacity in blocks
@@ -134,7 +134,7 @@ test_memory_controller #(
 // external memory
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 memory_embedded #(
-	.N_ENTRIES 	(2**`TOP_BW_RAM_ADDR_WORD 	),
+	.N_ENTRIES 	(2**`TOP_BW_RAM 			),
 	.BW_DATA 	(`TOP_BW_DATA_WORD 			),
 	.DEBUG 		(0 							), 	// if 1 sets the BRAM to dual port for in memory content editor
 	.INIT_PATH 	(`TOP_MEMORY_PATH 			) 	// memory to initialize to

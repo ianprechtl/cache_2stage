@@ -1,6 +1,7 @@
 `ifndef _CACHE_H_
 `define _CACHE_H_
 
+
 // cache commands
 // -------------------------------------------------------------------------
 `define CACHE_CMD_BW 						3
@@ -12,6 +13,12 @@
 `define CACHE_SERVICE_WRITEOUT_BLOCK 		3'b001
 `define CACHE_SERVICE_READIN_WORD 			3'b010
 `define CACHE_SERVICE_WRITEOUT_WORD 		3'b011
+
+
+// cache policy ID's
+// -------------------------------------------------------------------------
+`define CACHE_POLICY_ID_RANDOM  			32'h00000000
+`define CACHE_POLICY_ID_FIFO 				32'h00000001
 
 
 // cache identification pins
@@ -32,5 +39,24 @@
 `define ID_CACHE_4WAY_SET_ASSOCIATIVE 		32'h40000000
 `define ID_CACHE_8WAY_SET_ASSOCIATIVE 		32'h80000000
 
+// generic source files
+`include "../src/cache_level_1.v"
+`include "../src/buffers/cache_request_buffer.v"
+`include "../src/buffers/hart_request_buffer.v"
+`include "../src/memory_tag/tag_lookup_table.v"
+`include "../src/comparators/identity_comparator.v"
+`include "../src/memory_embedded/memory_embedded.v"
+`include "../src/memory_embedded/cache_memory.v"
+`include "../src/controllers_cache/cache_controller.v"
+`include "../src/controllers_policy/cache_policy_controller.v"
+
+// fully associative source files
+`include "../src/memory_tag/tag_lookup_table_fa.v"
+
+// set associative source files
+`include "../src/memory_tag/tag_lookup_table_set.v"
+
+// replacement policy source files
+`include "../src/controllers_policy/cache_policy_controller_fifo.v"
 
 `endif

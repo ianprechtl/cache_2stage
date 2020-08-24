@@ -2,7 +2,7 @@
 `define _TEST_MEMORY_CONTROLLER_V_
 
 module test_memory_controller #(
-	parameter BW_RAM_ADDR_WORD 		= 17,
+	parameter BW_RAM_ADDR_WORD 		= 16,
 	parameter BW_USED_ADDR_BYTE 	= 26, 				// byte addressible converted address
 	parameter BW_DATA_WORD 			= 32,  				// bits in a data word
 	parameter BW_DATA_EXTERNAL_BUS 	= 512, 				// bits that can be transfered between this level cache and next
